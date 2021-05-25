@@ -107,18 +107,20 @@ contract Master is Ownable {
     // Rebase will remain restricted to the owner until the final Oracle is deployed and battle-tested.
     // Ownership will be renounced after this inital period.
     
-    // Start at $.01
+    // Start at $.001
     uint256 public targetRate;
     
     bool public rebaseLocked; 
 
     constructor(address _guh) public {
         deviationThreshold = 5 * 10 ** (DECIMALS-2);
-        targetRate = (10 ** (DECIMALS-3));
+        // Start at .04 cents 5-24-2021
+        targetRate = (4 * 10 ** (DECIMALS-2));
 
         rebaseCooldown = 4 hours;
-        lastRebaseTimestampSec = 0;
-        epoch = 0;
+        lastRebaseTimestampSec = 1621900800;
+        // Start at epoch 80 5-24-2021
+        epoch = 80;
         rebaseLocked = true;
         
         guh = IGuh(_guh);
@@ -167,6 +169,11 @@ contract Master is Ownable {
 
         (uint256 exchangeRate, int256 supplyDelta) = getRebaseValues();
         
+        // Ignore positive rebases 5-24-2021
+        if (supplyDelta > 0) {
+            supplyDelta = 0;
+        }
+        
         uint256 supplyAfterRebase = guh.rebase(epoch, supplyDelta);
         
         assert(supplyAfterRebase <= MAX_SUPPLY);
@@ -194,12 +201,12 @@ contract Master is Ownable {
         emit LogRebase(epoch, exchangeRate, supplyDelta, now);
     }
     
-    // increment by 20%
+    // increment by 5%
     function incrementTargetRate() internal {
         targetRate = targetRate.mul(21).div(20);
     }
     
-    // set rate to BTC rate + 1%
+    // set rate to BTC rate + 1% ATH 5-24-2021
     function setTargetRateBTC() internal {
         uint256 btcRate = marketOracleBTC.getData();
         targetRate = btcRate.mul(101).div(100);
