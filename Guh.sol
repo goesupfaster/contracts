@@ -350,10 +350,6 @@ contract GUH is ERC20Detailed, Ownable {
     // Used for authentication
     address public master;
     
-    // LP atomic sync
-    address public lp;
-    ILP public lpContract;
-
     modifier onlyMaster() {
         require(msg.sender == master);
         _;
@@ -423,7 +419,6 @@ contract GUH is ERC20Detailed, Ownable {
         }
 
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
-        lpContract.sync();
 
         emit LogRebase(epoch, _totalSupply);
         return _totalSupply;
@@ -453,18 +448,6 @@ contract GUH is ERC20Detailed, Ownable {
         master = _master;
     }
     
-        /**
-     * @notice Sets contract LP address
-     */
-    function setLP(address _lp)
-        external
-        onlyOwner
-        returns (uint256)
-    {
-        lp = _lp;
-        lpContract = ILP(_lp);
-    }
-
     /**
      * @return The total number of fragments.
      */
