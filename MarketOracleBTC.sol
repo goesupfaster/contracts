@@ -499,7 +499,7 @@ contract MarketOracleBTC is Ownable {
         (uint price0Cumulative, uint price1Cumulative, uint32 _blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(_btcb_bnb));
 
-        FixedPoint.uq112x112 memory btcbBnbAverage = FixedPoint.uq112x112(uint224(1e18 * (price0Cumulative - btcbBnbPrice0CumulativeLast) / (_blockTimestamp - btcbBnbBlockTimestampLast)));
+        FixedPoint.uq112x112 memory btcbBnbAverage = FixedPoint.uq112x112(uint224(1e12 * (price0Cumulative - btcbBnbPrice0CumulativeLast) / (_blockTimestamp - btcbBnbBlockTimestampLast)));
 
         return (price0Cumulative, price1Cumulative, _blockTimestamp, btcbBnbAverage.mul(1).decode144());
     }
@@ -509,7 +509,7 @@ contract MarketOracleBTC is Ownable {
         (uint price0Cumulative, uint price1Cumulative, uint32 _blockTimestamp) =
             UniswapV2OracleLibrary.currentCumulativePrices(address(_wbnb_busd));
 
-        FixedPoint.uq112x112 memory busdBnbAverage = FixedPoint.uq112x112(uint224(1e6*(price1Cumulative - wbnbBusdPrice1CumulativeLast) / (_blockTimestamp - wbnbBusdBlockTimestampLast)));
+        FixedPoint.uq112x112 memory busdBnbAverage = FixedPoint.uq112x112(uint224(1e12*(price1Cumulative - wbnbBusdPrice1CumulativeLast) / (_blockTimestamp - wbnbBusdBlockTimestampLast)));
 
         return (price0Cumulative, price1Cumulative, _blockTimestamp, busdBnbAverage.mul(1).decode144());
     }
