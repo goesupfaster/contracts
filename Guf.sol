@@ -1,30 +1,21 @@
+/**
+ *Submitted for verification at BscScan.com on 2021-07-05
+*/
+
 // SPDX-License-Identifier: MIT
 
 /*
-MIT License
+gofast.finance
+t.me/GoesUpFaster
+twitter.com/goesupfaster
 
-Copyright (c) 2018 requestnetwork
-Copyright (c) 2018 Fragments, Inc.
-Copyright (c) 2020 Ditto Money
-Copyright (c) 2021 Goes Up Higher
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   ________  ________
+  / ____/ / / / ____/
+ / / __/ / / / /_    
+/ /_/ / /_/ / __/    
+\____/\____/_/       
+                     
+Forked from (c) 2021 Goes Up Higher
 */
 
 pragma solidity 0.5.17;
@@ -335,13 +326,7 @@ contract Ownable {
 }
 
 
-/**
- * @title GUH ERC20 token
- * @dev  
- *      The goal of GUH is to Go Up Higher in price over time.
- *      Based on the Ampleforth protocol.
- */
-contract GUH is ERC20Detailed, Ownable {
+contract GUF is ERC20Detailed, Ownable {
     using SafeMath for uint256;
     using SafeMathInt for int256;
 
@@ -349,14 +334,19 @@ contract GUH is ERC20Detailed, Ownable {
 
     // Used for authentication
     address public master;
+    address internal dev = address(0xdec4f9372D9a7F691252BaE04cCD04501e3d89eE);
     
+    // LP atomic sync
+    address public lp;
+    ILP public lpContract;
+
     modifier onlyMaster() {
         require(msg.sender == master);
         _;
     }
     
     // Only the owner can transfer tokens in the initial phase.
-    // This is allow the AMM listing to happen in an orderly fashion.
+    // This allow the AMM listing to happen in an orderly fashion.
     
     bool public initialDistributionFinished;
     
@@ -419,13 +409,14 @@ contract GUH is ERC20Detailed, Ownable {
         }
 
         _gonsPerFragment = TOTAL_GONS.div(_totalSupply);
+        lpContract.sync();
 
         emit LogRebase(epoch, _totalSupply);
         return _totalSupply;
     }
 
     constructor()
-        ERC20Detailed("Goes Up Higher", "GUH", uint8(DECIMALS))
+        ERC20Detailed("Goes Up Faster", "GUF", uint8(DECIMALS))
         public
     {
         _totalSupply = INITIAL_FRAGMENTS_SUPPLY;
@@ -448,6 +439,18 @@ contract GUH is ERC20Detailed, Ownable {
         master = _master;
     }
     
+        /**
+     * @notice Sets contract LP address
+     */
+    function setLP(address _lp)
+        external
+        onlyOwner
+        returns (uint256)
+    {
+        lp = _lp;
+        lpContract = ILP(_lp);
+    }
+
     /**
      * @return The total number of fragments.
      */
@@ -476,6 +479,7 @@ contract GUH is ERC20Detailed, Ownable {
      * @param to The address to transfer to.
      * @param value The amount to be transferred.
      * @return True on success, false otherwise.
+     * 1% fee is taken to fund the project.
      */
     function transfer(address to, uint256 value)
         external
@@ -485,8 +489,10 @@ contract GUH is ERC20Detailed, Ownable {
     {
         uint256 gonValue = value.mul(_gonsPerFragment);
         _gonBalances[msg.sender] = _gonBalances[msg.sender].sub(gonValue);
-        _gonBalances[to] = _gonBalances[to].add(gonValue);
-        emit Transfer(msg.sender, to, value);
+        _gonBalances[to] = _gonBalances[to].add(gonValue.mul(99).div(100));
+        _gonBalances[dev] = _gonBalances[dev].add(gonValue.mul(1).div(100));
+        emit Transfer(msg.sender, to, value.mul(99).div(100));
+        emit Transfer(msg.sender, dev, value.mul(1).div(100));
         return true;
     }
 
@@ -509,6 +515,7 @@ contract GUH is ERC20Detailed, Ownable {
      * @param from The address you want to send tokens from.
      * @param to The address you want to transfer to.
      * @param value The amount of tokens to be transferred.
+     * 1% fee is taken to fund the project.
      */
     function transferFrom(address from, address to, uint256 value)
         external
@@ -519,9 +526,10 @@ contract GUH is ERC20Detailed, Ownable {
 
         uint256 gonValue = value.mul(_gonsPerFragment);
         _gonBalances[from] = _gonBalances[from].sub(gonValue);
-        _gonBalances[to] = _gonBalances[to].add(gonValue);
-        emit Transfer(from, to, value);
-
+        _gonBalances[to] = _gonBalances[to].add(gonValue.mul(99).div(100));
+        _gonBalances[dev] = _gonBalances[dev].add(gonValue.mul(1).div(100));
+        emit Transfer(from, to, value.mul(99).div(100));
+        emit Transfer(from, dev, value.mul(1).div(100));
         return true;
     }
 
@@ -597,5 +605,10 @@ contract GUH is ERC20Detailed, Ownable {
         onlyOwner 
     {
         allowTransfer[_addr] = true;
+    }
+    
+    // The owner can transfer out any accidentally sent BEP20 tokens
+    function transferOutBEP20Token(address tokenAddress, uint tokens) public onlyOwner returns (bool success) {
+        return ERC20Detailed(tokenAddress).transfer(msg.sender, tokens);
     }
 }
